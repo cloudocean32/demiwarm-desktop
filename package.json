@@ -1,0 +1,78 @@
+{
+  "name": "DEMIWARM",
+  "version": "1.0.0",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "build:win": "electron-builder --win --x64",
+    "build:win-portable": "electron-builder --win --x64 --config.artifactName=DEMIWARM.exe",
+    "build:linux": "electron-builder --linux",
+    "build:dmg": "electron-builder --mac --config.dmg.sign=false"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2",
+    "public-ip": "^7.0.1",
+    "qrcode-terminal": "^0.12.0",
+    "undici": "^7.12.0",
+    "uuid": "^9.0.0",
+    "whatsapp-web.js": "^1.31.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "electron-store": "^8.1.0"
+  },
+  "build": {
+    "appId": "com.demiwarm.desktop",
+    "productName": "DEMIWARM",
+    "provider": "github",
+    "repo": "nama-repo-anda",
+    "copyright": "Copyright © 2025 DEMIWARM",
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/mac/icon.icns",
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "dmg": {
+      "title": "DEMIWARM",
+      "background": null,
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "sign": false
+    },
+    "win": {
+      "target": "portable",
+      "icon": "build/win/icon.ico",
+      "artifactName": "DEMIWARM.exe"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/{.bin,electron-builder,electron-prebuilt}"
+    ]
+  }
+}
