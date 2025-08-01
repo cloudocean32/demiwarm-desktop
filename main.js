@@ -81,15 +81,15 @@ function createMainWindow() {
   if (app.isPackaged) {
     state.mainWindow.setMenu(null);
   }
-  
-  state.mainWindow.loadFile('index.html');
-  state.mainWindow.on('closed', () => (state.mainWindow = null));
-  
+
   state.mainWindow.once('ready-to-show', () => {
     if (app.isPackaged) {
       autoUpdater.checkForUpdates();
     }
   });
+  
+  state.mainWindow.loadFile('index.html');
+  state.mainWindow.on('closed', () => (state.mainWindow = null));
 }
 
 function createAccessDeniedWindow() {
