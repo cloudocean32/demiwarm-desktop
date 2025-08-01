@@ -1,6 +1,11 @@
 {
   "name": "DEMIWARM",
-  "version": "0.1.0",
+  "version": "0.1.2",
+  "description": "DEMIWARM - Whatsapp Automation & Reply Manager",
+  "author": {
+    "name": "DEV168",
+    "email": "data.demigod888@gmail.com"
+  },
   "main": "main.js",
   "license": "MIT", 
   "scripts": {
@@ -69,11 +74,15 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "build/win/icon.ico"
+      "icon": "build/ico/icon.ico"
     },
     "files": [
-      "**/*",
-      "!node_modules/{.bin,electron-builder,electron-prebuilt}"
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "access-denied.html",
+      "build/**/*"
     ]
   }
 }
