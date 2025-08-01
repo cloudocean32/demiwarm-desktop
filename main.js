@@ -39,9 +39,12 @@ function createMainWindow() {
     minHeight: 700,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      devTools: true,
+      devTools: !app.isPackaged,
     }
   });
+  if (app.isPackaged) {
+    state.mainWindow.setMenu(null);
+  }
   state.mainWindow.loadFile('index.html');
   state.mainWindow.on('closed', () => (state.mainWindow = null));
 }
