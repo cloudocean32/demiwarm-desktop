@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getCurrentIp: () => ipcRenderer.invoke('get-current-ip'),
   closeApp: () => ipcRenderer.invoke('close-app'),
   onWindowClosed: (callback) => ipcRenderer.on('window-closed', (event, ...args) => callback(...args)),
+  onUpdateAvailable: (callback) => ipcRenderer.on('update_available', (event, ...args) => callback(...args)),
+  startUpdateDownload: () => ipcRenderer.invoke('start-update-download'),
   askAI: (prompt) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
