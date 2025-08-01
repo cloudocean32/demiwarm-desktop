@@ -192,7 +192,9 @@ ipcMain.handle('close-app', () => app.quit());
 ipcMain.handle('start-update-download', () => {
     autoUpdater.downloadUpdate();
 });
-
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
 ipcMain.handle('get-or-create-account', async (_, { name, number }) => {
     const sessionMap = loadSessionMap();
     let accountInfo = sessionMap[number];
