@@ -2,6 +2,51 @@
 Your solution for automation message
 
 --------------------------------------------------
+### STATUS TERSEDIA ###
+--------------------------------------------------
+### 🟢 Online
+Kondisi: Terjadi ketika waktu saat ini masuk ke dalam jadwal wa (waktu luang). Ini adalah waktu di mana karakter diasumsikan sedang aktif menggunakan ponselnya.
+
+Perilaku AI:
+
+Balasan Cepat: Jeda dasar untuk membalas pesan dipotong setengah (x0.5), menjadikannya status dengan respons tercepat secara umum.
+
+Peluang Terdistraksi: Meskipun cepat, ada 30% kemungkinan untuk "terdistraksi" (misal: scroll TikTok, balas chat lain), yang akan menyebabkan jeda acak tambahan selama 1-4 menit.
+
+Analogi Dunia Nyata: Anda sedang santai sambil aktif membuka WhatsApp. Anda bisa membalas chat dengan sangat cepat, tapi sesekali Anda keasyikan menonton sesuatu dan baru membalas beberapa menit kemudian.
+
+### 🟠 Busy
+Kondisi: Terjadi ketika waktu saat ini masuk ke dalam jadwal busy (jam kerja, rapat, dll). Karakter diasumsikan sedang fokus pada aktivitas utamanya.
+
+Perilaku AI:
+
+Balasan Lambat (Umumnya): Ada 90% kemungkinan untuk menambahkan jeda paksa yang sangat panjang (3-15 menit) sebelum membalas.
+
+Balasan Cepat (Langka): Ada 10% kemungkinan bagi karakter untuk "mencuri waktu" dan membalas dengan cepat di sela-sela kesibukannya.
+
+Analogi Dunia Nyata: Anda sedang bekerja di kantor. Sebagian besar waktu Anda fokus dan baru bisa membalas chat setelah tugas selesai (jeda lama). Tapi sesekali, ada jeda singkat dan Anda sempat melirik ponsel untuk membalas cepat.
+
+### ⚪ Idle
+Kondisi: Status default saat tidak dalam jadwal Online, Busy, maupun Sleeping. Ini adalah "waktu antara" atau waktu normal.
+
+Perilaku AI:
+
+Balasan Standar: Jeda balasan normal, sesuai dengan pengaturan delayMin dan delayMax di Room. Tidak ada percepatan, perlambatan, atau jeda panjang tambahan.
+
+Analogi Dunia Nyata: Anda sedang melakukan aktivitas di rumah seperti memasak atau membersihkan. Ponsel Anda ada di meja. Anda tidak sedang aktif memainkannya, tapi juga tidak super sibuk. Anda akan membalas dengan kecepatan normal saat sempat memeriksa ponsel.
+
+### 😴 Sleeping
+Kondisi: Terjadi ketika waktu saat ini masuk ke dalam jadwal sleep.
+
+Perilaku AI:
+
+Tidak Ada Aksi: Karakter menjadi pasif total. Gilirannya akan dilewati sepenuhnya.
+
+Ia tidak akan membuat balasan, tidak akan mengirim follow-up, dan tidak akan melakukan apa pun sampai jadwal tidurnya selesai.
+
+Analogi Dunia Nyata: Seseorang yang sedang tidur lelap dan tidak akan merespons apa pun sampai mereka bangun.
+
+--------------------------------------------------
 ### 💼 KARYAWAN KANTOR ###
 --------------------------------------------------
 
