@@ -1045,6 +1045,18 @@ function initialize() {
         }
     });
 
+    window.electronAPI.onUpdateAvailable(() => {
+        console.log('Update available from main process, showing button.');
+        const updateBtn = document.getElementById('updateNotification');
+        updateBtn.style.display = 'flex'; // Tampilkan tombol
+        
+        updateBtn.addEventListener('click', () => {
+            updateBtn.textContent = 'Downloading...';
+            updateBtn.disabled = true;
+            window.electronAPI.startUpdateDownload();
+        });
+    });
+
     state.statusUpdateInterval = setInterval(updateAllAccountStatuses, 5000);
     updateStatus('Ready to manage WhatsApp accounts.');
 }
