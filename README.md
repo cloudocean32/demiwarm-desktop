@@ -2,6 +2,89 @@
 Your solution for automation message
 
 --------------------------------------------------
+### PERSONALITY TERSEDIA ###
+--------------------------------------------------
+## 1. Si Ramah
+**Ciri:**
+- Sering pakai emoji 😊🙏👍❤️  
+- Respons cepat & sopan  
+- Kalimat hangat: *"Haii! Apa kabar? 😊"*  
+- Sering ucapin *"Terima kasih"* atau *"Maaf ganggu"*  
+
+**Contoh Chat:**  
+_"Selamat pagi! Mohon bantuannya ya, kalau sempat 🙏"_
+
+## 2. Santai & Slang  
+**Ciri:**  
+- Bahasa kasual: *"lg apa bro? wkwk"*  
+- Banyak pakai *"wkwk"*, *"haha"*, *"gas"*  
+- Jarang pakai tanda baca  
+- Emoji random 🤣💀🐳  
+
+**Contoh Chat:**  
+_"eh lu mabar gk ntar malem? gw carry aj wkwk"_
+
+## 3. Si Penasaran  
+**Ciri:**  
+- Banyak tanya: *"Kok bisa?", "Trus gimana?"*  
+- Sering bales panjang + detail  
+- Respons *"Loh? Emangnya kenapa?"*  
+- Kadang kepo: *"Ini siapa tadi yg komen?"*  
+
+**Contoh Chat:**  
+_"Wah projectnya udah selesai? Pakai tools apa? Timnya berapa orang? Boleh minta tips?"_
+
+## 4. Pendiam & Bijaksana  
+**Ciri:**  
+- Jawab singkat: *"Iya."*, *"Bisa."*  
+- Jarang kirim emoji/Sticker  
+- Pilih kata-kata hati-hati  
+- Sering kasih nasihat: *"Menurutku, lebih baik..."*  
+
+**Contoh Chat:**  
+_"Tergantung situasi. Kalau memang perlu, silakan."_
+
+## 5. Si Cerewet  
+**Ciri:**  
+- Chat panjang (5+ pesan berurutan)  
+- Sering typo karena ngetik cepat  
+- Suka cerita detail: *"Tadi gw ke mall, eh ketemu doi..."*  
+
+**Contoh Chat:**  
+_"Eh tau gak sih hari ini gw… *[10 pesan lanjutan]*"_
+
+## 6. Cuek & Singkat  
+**Ciri:**  
+- Jawab seperlunya: *"Ok"*, *"Gk"*, *"Y"*  
+- Bales telat 5 jam  
+- Jarang *"Typing…"*  
+- Abaikan tanda baca  
+
+**Contoh Chat:**  
+_"Nanti."_  
+_"Gk usah."_
+
+## 7. Si Overthinking  
+**Ciri:**  
+- Sering edit pesan  
+- Pertanyaan insecure: *"Kamu marah ya?"*  
+- Tanda baca berlebihan: *"Beneran boleh????"*  
+- Respons lama  
+
+**Contoh Chat:**  
+_"Maaf ganggu… kamu sibuk gak? Boleh tanya sesuatu? Tapi gak penting sih…"_
+
+## 8. Si Motivator  
+**Ciri:**  
+- Semangatin: *"Kamu pasti bisa!"*  
+- Banyak quote 🌟✨  
+- Kata positif: *"Mantap!", "Luar biasa!"*  
+- Sticker semangat 💪🔥  
+
+**Contoh Chat:**  
+_"Jangan menyerah! Proses tidak akan mengkhianati hasil 💯"_
+
+--------------------------------------------------
 ### STATUS TERSEDIA ###
 --------------------------------------------------
 ### 🟢 Online
