@@ -71,7 +71,7 @@ function createMainWindow() {
     minHeight: 700,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      devTools: !app.isPackaged,
+      devTools: true,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -81,15 +81,16 @@ function createMainWindow() {
   if (app.isPackaged) {
     state.mainWindow.setMenu(null);
   }
-  
-  state.mainWindow.loadFile('index.html');
-  state.mainWindow.on('closed', () => (state.mainWindow = null));
-  
+
   state.mainWindow.once('ready-to-show', () => {
     if (app.isPackaged) {
       autoUpdater.checkForUpdates();
     }
   });
+  
+  state.mainWindow.loadFile('index.html');
+  state.mainWindow.on('closed', () => (state.mainWindow = null));
+
 }
 
 function createAccessDeniedWindow() {
