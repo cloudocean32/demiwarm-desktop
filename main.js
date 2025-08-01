@@ -2,28 +2,35 @@ const { app, BrowserWindow, ipcMain, session, clipboard, dialog, shell } = requi
 const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 
 // ======================================================================
 // KONFIGURASI & LOGGING AUTO-UPDATER
 // ======================================================================
-autoUpdater.on('checking-for-update', () => console.log('Checking for update...'));
-autoUpdater.on('update-not-available', (info) => console.log('Update not available.', info));
-autoUpdater.on('error', (err) => console.error('Error in auto-updater. ' + err));
+autoUpdater.logger = log;
+autoUpdater.logger.transports.file.level = 'info';
 
+autoUpdater.on('checking-for-update', () => {
+  log.info('Checking for update...');
+});
 autoUpdater.on('update-available', (info) => {
-  console.log('Update available.', info);
+  log.info('Update available.', info);
   if (state.mainWindow) {
     state.mainWindow.webContents.send('update_available');
   }
 });
-
+autoUpdater.on('update-not-available', (info) => {
+  log.info('Update not available.', info);
+});
+autoUpdater.on('error', (err) => {
+  log.error('Error in auto-updater. ' + err);
+});
 autoUpdater.on('download-progress', (progressObj) => {
   let log_message = `Downloaded ${progressObj.percent.toFixed(2)}% (${(progressObj.bytesPerSecond / 1000).toFixed(2)} KB/s)`;
-  console.log(log_message);
+  log.info(log_message);
 });
-
 autoUpdater.on('update-downloaded', (info) => {
-  console.log('Update downloaded. Prompting user to restart.');
+  log.info('Update downloaded. Prompting user to restart.');
   const dialogOpts = {
     type: 'info',
     buttons: ['Restart Now', 'Later'],
@@ -140,23 +147,26 @@ async function createWhatsAppWindow(name, partitionId) {
 // ======================================================================
 
 async function initializeApp() {
+  log.info('App starting...');
   try {
     const { publicIpv4 } = await import('public-ip');
     currentUserPublicIP = await publicIpv4();
-    console.log(`Current Public IP: ${currentUserPublicIP}`);
+    log.info(`Current Public IP: ${currentUserPublicIP}`);
+
     const whitelistResponse = await fetch('https://whitelistips.vercel.app/ips');
     const whitelistData = await whitelistResponse.json();
     const allowedIps = whitelistData.ips;
-    console.log('Whitelist IPs loaded.');
+    log.info('Whitelist IPs loaded.');
+
     if (allowedIps.includes(currentUserPublicIP)) {
-      console.log('IP is in whitelist. Starting main application...');
+      log.info('IP is in whitelist. Starting main application...');
       createMainWindow();
     } else {
-      console.warn('IP NOT in whitelist. Showing access denied page.');
+      log.warn('IP NOT in whitelist. Showing access denied page.');
       createAccessDeniedWindow();
     }
   } catch (error) {
-    console.error('Failed to verify IP address:', error);
+    log.error('Failed to verify IP address:', error);
     createAccessDeniedWindow();
   }
 }
@@ -179,7 +189,6 @@ app.on('activate', () => {
 
 ipcMain.handle('get-current-ip', () => ({ currentIP: currentUserPublicIP }));
 ipcMain.handle('close-app', () => app.quit());
-
 ipcMain.handle('start-update-download', () => {
     autoUpdater.downloadUpdate();
 });
@@ -329,6 +338,7 @@ ipcMain.handle('find-and-reply-story', async (_, accountId) => {
         if (winInfo) { winInfo.isSending = false; clipboard.clear(); }
     }
 });
+
 ipcMain.handle('post-text-story', async (_, { accountId, storyText }) => {
     const winInfo = state.whatsappWindows.get(Number(accountId));
     if (!winInfo) throw new Error('Account window not found for posting story.');
@@ -347,6 +357,7 @@ ipcMain.handle('post-text-story', async (_, { accountId, storyText }) => {
         if (winInfo) { winInfo.isSending = false; clipboard.clear(); }
     }
 });
+
 ipcMain.handle('clear-all-data', async () => {
   try {
     const userDataPath = app.getPath('userData');
