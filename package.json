@@ -1,43 +1,52 @@
 {
   "name": "DEMIWARM",
-  "version": "0.1.8",
+  "version": "1.0.0",
   "description": "DEMIWARM - Whatsapp Automation & Reply Manager",
   "author": {
     "name": "DEV168",
     "email": "data.demigod888@gmail.com"
   },
   "main": "main.js",
-  "license": "MIT", 
+  "license": "MIT",
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
+    "publish": "electron-builder --publish always",
     "build:win": "electron-builder --win --x64",
-    "build:win-portable": "electron-builder --win --x64 --config.artifactName=DEMIWARM.exe",
     "build:linux": "electron-builder --linux",
-    "build:dmg": "electron-builder --mac --config.dmg.sign=false"
+    "build:mac": "electron-builder --mac"
   },
   "dependencies": {
-    "electron-updater": "^6.6.2",
-    "public-ip": "^7.0.1",
+    "electron-log": "^5.1.5",
+    "electron-updater": "^6.2.1",
+    "public-ip": "^6.0.2",
     "qrcode-terminal": "^0.12.0",
-    "undici": "^7.12.0",
-    "uuid": "^9.0.0"
+    "undici": "^6.19.2",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "electron": "^36.3.2",
-    "electron-builder": "^26.0.12",
-    "electron-store": "^8.1.0"
+    "electron": "^31.0.2",
+    "electron-builder": "^24.13.3",
+    "electron-store": "^8.2.0"
   },
   "build": {
     "appId": "com.demiwarm.desktop",
     "productName": "DEMIWARM",
+    "copyright": "Copyright © 2025 DEMIWARM",
     "publish": {
       "provider": "github",
       "owner": "cloudocean32",
       "repo": "demiwarm-desktop"
     },
-    "copyright": "Copyright © 2025 DEMIWARM",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "access-denied.html",
+      "build/**/*"
+    ],
     "mac": {
       "target": [
         "dmg",
@@ -76,13 +85,10 @@
       "target": "nsis",
       "icon": "build/ico/icon.ico"
     },
-    "files": [
-      "main.js",
-      "preload.js",
-      "renderer.js",
-      "index.html",
-      "access-denied.html",
-      "build/**/*"
-    ]
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    }
   }
 }
