@@ -1020,7 +1020,14 @@ function initDarkMode() {
 //                          INISIALISASI
 // =================================================================
 
-function initialize() {
+async function initialize() {
+    try {
+        const version = await window.electronAPI.getAppVersion();
+        document.title = `DEMIWARM - Whatsapp Automation & Reply Manager - v${version}`;
+    } catch (error) {
+        console.error('Failed to get app version:', error);
+    }
+
     initDarkMode();
     document.getElementById('newRoomBtn').addEventListener('click', showRoomModal);
     document.getElementById('clearCacheBtn').addEventListener('click', () => {
