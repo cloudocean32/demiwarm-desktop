@@ -4,10 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DEMIWARM - Whatsapp Automation & Reply Manager</title>
-  <meta content="noindex,nofollow" name="googlebot">
   <style>
     :root {
-      --primary-color: #25D366; --primary-dark: #128C7E;
+      --primary-color: #4c2a86; --primary-dark: #4fc3f7;
       --background-light: #EAEEF0; --background-dark: #111B21;
       --card-bg-light: #FFFFFF; --card-bg-dark: #202C33;
       --card-bg-light-rgb: 255, 255, 255; --card-bg-dark-rgb: 32, 44, 51;
@@ -21,6 +20,7 @@
       --info-blue: #3498db; --info-purple: #9b59b6; --info-orange: #e67e22;
     }
     .dark-mode {
+      --primary-color: #e67e22; --primary-dark: #4fc3f7;
       --background-light: var(--background-dark); --card-bg-light: var(--card-bg-dark);
       --card-bg-light-rgb: var(--card-bg-dark-rgb);
       --text-light: var(--text-dark); --text-muted-light: var(--text-muted-dark);
@@ -35,11 +35,23 @@
     .app-container { max-width: 1400px; margin: 0 auto; }
     header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 24px; padding: 16px 24px;
+      margin-bottom: 24px; padding: 12px 24px;
       background: var(--card-bg-light); border: 1px solid var(--border-light);
-      border-radius: 8px; box-shadow: var(--shadow);
+      border-radius: 10px; box-shadow: var(--shadow);
     }
-    h1 { font-size: 22px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-brand img {
+      height: 55px;
+      width: auto;
+      transition: filter var(--transition);
+    }
+    .dark-mode .header-brand img {
+      filter: invert(1) brightness(1.5);
+    }
     .header-actions { display: flex; gap: 12px; }
     .btn {
       background: var(--primary-color); color: white; border: none;
@@ -131,7 +143,6 @@
       color: var(--text-muted-light); width: 30px; height: 30px;
       border-radius: 50%; cursor: pointer; font-size: 15px;
       display: flex; align-items: center; justify-content: center;
-      
     }
     .dark-mode .card-actions button { background: rgba(var(--card-bg-dark-rgb), 0.7); }
     .card-actions button:hover { background: var(--border-light); color: var(--text-light); }
@@ -223,9 +234,8 @@
 <body>
   <div class="app-container">
     <header>
-      <div>
-        <h1>DEMIWARM</h1>
-        <span style="font-size:12px;color:grey;">Whatsapp Automation & Reply Manager</span>
+      <div class="header-brand">
+        <img src="./build/logo/LOGO-DEMIWARM2.png" alt="DEMIWARM Logo" />
       </div>
       <div class="header-actions">
         <button id="darkModeToggle" class="btn-icon" title="Toggle Dark Mode">
