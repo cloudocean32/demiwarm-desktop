@@ -71,7 +71,7 @@ function createMainWindow() {
     minHeight: 700,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
-      devTools: true,
+      devTools: !app.isPackaged,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -90,7 +90,6 @@ function createMainWindow() {
   
   state.mainWindow.loadFile('index.html');
   state.mainWindow.on('closed', () => (state.mainWindow = null));
-
 }
 
 function createAccessDeniedWindow() {
