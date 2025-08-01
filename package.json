@@ -1,8 +1,8 @@
 {
   "name": "DEMIWARM",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "main": "main.js",
-  "license": "MIT",
+  "license": "MIT", 
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
@@ -20,15 +20,18 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1",
+    "electron": "^36.3.2",
+    "electron-builder": "^26.0.12",
     "electron-store": "^8.1.0"
   },
   "build": {
     "appId": "com.demiwarm.desktop",
     "productName": "DEMIWARM",
-    "provider": "github",
-    "repo": "nama-repo-anda",
+    "publish": {
+      "provider": "github",
+      "owner": "cloudocean32",
+      "repo": "demiwarm-desktop"
+    },
     "copyright": "Copyright © 2025 DEMIWARM",
     "mac": {
       "target": [
@@ -65,9 +68,8 @@
       "sign": false
     },
     "win": {
-      "target": "portable",
-      "icon": "build/win/icon.ico",
-      "artifactName": "DEMIWARM.exe"
+      "target": "nsis",
+      "icon": "build/win/icon.ico"
     },
     "files": [
       "**/*",
