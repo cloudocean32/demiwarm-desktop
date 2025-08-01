@@ -7,13 +7,21 @@ const { autoUpdater } = require('electron-updater');
 // KONFIGURASI & LOGGING AUTO-UPDATER
 // ======================================================================
 autoUpdater.on('checking-for-update', () => console.log('Checking for update...'));
-autoUpdater.on('update-available', (info) => console.log('Update available.', info));
 autoUpdater.on('update-not-available', (info) => console.log('Update not available.', info));
 autoUpdater.on('error', (err) => console.error('Error in auto-updater. ' + err));
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Update available.', info);
+  if (state.mainWindow) {
+    state.mainWindow.webContents.send('update_available');
+  }
+});
+
 autoUpdater.on('download-progress', (progressObj) => {
   let log_message = `Downloaded ${progressObj.percent.toFixed(2)}% (${(progressObj.bytesPerSecond / 1000).toFixed(2)} KB/s)`;
   console.log(log_message);
 });
+
 autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded. Prompting user to restart.');
   const dialogOpts = {
@@ -81,15 +89,15 @@ function createMainWindow() {
   if (app.isPackaged) {
     state.mainWindow.setMenu(null);
   }
-
+  
+  state.mainWindow.loadFile('index.html');
+  state.mainWindow.on('closed', () => (state.mainWindow = null));
+  
   state.mainWindow.once('ready-to-show', () => {
     if (app.isPackaged) {
       autoUpdater.checkForUpdates();
     }
   });
-  
-  state.mainWindow.loadFile('index.html');
-  state.mainWindow.on('closed', () => (state.mainWindow = null));
 }
 
 function createAccessDeniedWindow() {
@@ -171,6 +179,10 @@ app.on('activate', () => {
 
 ipcMain.handle('get-current-ip', () => ({ currentIP: currentUserPublicIP }));
 ipcMain.handle('close-app', () => app.quit());
+
+ipcMain.handle('start-update-download', () => {
+    autoUpdater.downloadUpdate();
+});
 
 ipcMain.handle('get-or-create-account', async (_, { name, number }) => {
     const sessionMap = loadSessionMap();
