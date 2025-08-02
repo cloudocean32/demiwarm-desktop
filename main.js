@@ -3,28 +3,19 @@ const path = require('path');
 const fs = require('fs');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
+const selectors = require('./selectors.js');
 
-// ======================================================================
-// KONFIGURASI & LOGGING AUTO-UPDATER
-// ======================================================================
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
-
-autoUpdater.on('checking-for-update', () => {
-  log.info('Checking for update...');
-});
+autoUpdater.on('checking-for-update', () => log.info('Checking for update...'));
 autoUpdater.on('update-available', (info) => {
   log.info('Update available.', info);
   if (state.mainWindow) {
     state.mainWindow.webContents.send('update_available');
   }
 });
-autoUpdater.on('update-not-available', (info) => {
-  log.info('Update not available.', info);
-});
-autoUpdater.on('error', (err) => {
-  log.error('Error in auto-updater. ' + err);
-});
+autoUpdater.on('update-not-available', (info) => log.info('Update not available.', info));
+autoUpdater.on('error', (err) => log.error('Error in auto-updater. ' + err));
 autoUpdater.on('download-progress', (progressObj) => {
   let log_message = `Downloaded ${progressObj.percent.toFixed(2)}% (${(progressObj.bytesPerSecond / 1000).toFixed(2)} KB/s)`;
   log.info(log_message);
@@ -43,9 +34,6 @@ autoUpdater.on('update-downloaded', (info) => {
   });
 });
 
-// ======================================================================
-// GLOBAL STATE & FUNGSI DASAR
-// ======================================================================
 const state = {
   mainWindow: null,
   whatsappWindows: new Map(),
@@ -59,7 +47,7 @@ function loadSessionMap() {
             return JSON.parse(fs.readFileSync(sessionMapPath, 'utf-8'));
         }
     } catch (error) {
-        console.error('Failed to load session map:', error);
+        log.error('Failed to load session map:', error);
     }
     return {};
 }
@@ -69,13 +57,9 @@ function saveSessionMap(map) {
         const sessionMapPath = path.join(app.getPath('userData'), 'session-map.json');
         fs.writeFileSync(sessionMapPath, JSON.stringify(map, null, 2));
     } catch (error) {
-        console.error('Failed to save session map:', error);
+        log.error('Failed to save session map:', error);
     }
 }
-
-// ======================================================================
-// MANAJEMEN JENDELA (WINDOWS)
-// ======================================================================
 
 function createMainWindow() {
   state.mainWindow = new BrowserWindow({
@@ -92,14 +76,11 @@ function createMainWindow() {
       sandbox: true,
     }
   });
-
   if (app.isPackaged) {
     state.mainWindow.setMenu(null);
   }
-  
   state.mainWindow.loadFile('index.html');
   state.mainWindow.on('closed', () => (state.mainWindow = null));
-  
   state.mainWindow.once('ready-to-show', () => {
     if (app.isPackaged) {
       autoUpdater.checkForUpdates();
@@ -115,6 +96,7 @@ function createAccessDeniedWindow() {
     resizable: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
+      devTools: !app.isPackaged,
     }
   });
   deniedWindow.loadFile('access-denied.html');
@@ -126,7 +108,7 @@ async function createWhatsAppWindow(name, partitionId) {
     const cloneWindow = new BrowserWindow({
         title: `WhatsApp | Account ${name}`,
         width: 1200, height: 800, x: mainPos[0] + offset, y: mainPos[1] + offset,
-        webPreferences: { partition: `persist:${partitionId}`, contextIsolation: true, sandbox: true }
+        webPreferences: { partition: `persist:${partitionId}`, contextIsolation: true, sandbox: true, devTools: !app.isPackaged }
     });
     cloneWindow.webContents.on('page-title-updated', (event) => event.preventDefault());
     cloneWindow.setMenu(null);
@@ -142,22 +124,16 @@ async function createWhatsAppWindow(name, partitionId) {
     return cloneWindow;
 }
 
-// ======================================================================
-// ALUR STARTUP APLIKASI
-// ======================================================================
-
 async function initializeApp() {
   log.info('App starting...');
   try {
     const { publicIpv4 } = await import('public-ip');
     currentUserPublicIP = await publicIpv4();
     log.info(`Current Public IP: ${currentUserPublicIP}`);
-
     const whitelistResponse = await fetch('https://whitelistips.vercel.app/ips');
     const whitelistData = await whitelistResponse.json();
     const allowedIps = whitelistData.ips;
     log.info('Whitelist IPs loaded.');
-
     if (allowedIps.includes(currentUserPublicIP)) {
       log.info('IP is in whitelist. Starting main application...');
       createMainWindow();
@@ -172,29 +148,19 @@ async function initializeApp() {
 }
 
 app.whenReady().then(initializeApp);
-
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-
 app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0 && !state.mainWindow) {
         initializeApp();
     }
 });
 
-// ======================================================================
-// IPC HANDLERS (JEMBATAN KE RENDERER)
-// ======================================================================
-
 ipcMain.handle('get-current-ip', () => ({ currentIP: currentUserPublicIP }));
 ipcMain.handle('close-app', () => app.quit());
-ipcMain.handle('start-update-download', () => {
-    autoUpdater.downloadUpdate();
-});
-ipcMain.handle('get-app-version', () => {
-  return app.getVersion();
-});
+ipcMain.handle('start-update-download', () => autoUpdater.downloadUpdate());
+ipcMain.handle('get-app-version', () => { return app.getVersion(); });
 ipcMain.handle('get-or-create-account', async (_, { name, number }) => {
     const sessionMap = loadSessionMap();
     let accountInfo = sessionMap[number];
@@ -259,11 +225,12 @@ ipcMain.handle('send-message', async (_, { senderWindowId, receiverNumber, messa
       const phone = receiverNumber.replace(/[^\d]/g, '');
       const url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
       await senderWin.loadURL(url);
-      await senderWin.webContents.executeJavaScript(`new Promise((resolve, reject) => { let attempt = 0; const interval = setInterval(() => { attempt++; const commonTexts = ['continue', 'ok', 'got it']; const actionButton = Array.from(document.querySelectorAll('button')).find(b => commonTexts.includes(b.textContent.trim().toLowerCase())); if (actionButton) actionButton.click(); const sendBtn = document.querySelector('button[aria-label="Send"], span[data-icon="send"], button[data-tab="11"]'); if (sendBtn && document.querySelector('#main')) { clearInterval(interval); resolve(true); } if (attempt > 60) { clearInterval(interval); reject(new Error('Send button or main panel not found after 30 seconds.')); } }, 500); });`);
-      const result = await senderWin.webContents.executeJavaScript(`(() => { const sendBtn = document.querySelector('button[aria-label="Send"], span[data-icon="send"], button[data-tab="11"]'); if (sendBtn) { sendBtn.click(); return 'clicked'; } return 'not_found'; })();`);
+      const selectorsJSON = JSON.stringify(selectors);
+      await senderWin.webContents.executeJavaScript(`new Promise((resolve, reject) => { const selectors = ${selectorsJSON}; let attempt = 0; const interval = setInterval(() => { attempt++; const actionButton = Array.from(document.querySelectorAll('button')).find(b => selectors.genericPopupButtons.includes(b.textContent.trim().toLowerCase())); if (actionButton) actionButton.click(); const sendBtn = document.querySelector(selectors.sendButton); if (sendBtn && document.querySelector(selectors.mainPanel)) { clearInterval(interval); resolve(true); } if (attempt > 60) { clearInterval(interval); reject(new Error('Send button or main panel not found after 30 seconds.')); } }, 500); });`);
+      const result = await senderWin.webContents.executeJavaScript(`(() => { const selectors = ${selectorsJSON}; const sendBtn = document.querySelector(selectors.sendButton); if (sendBtn) { sendBtn.click(); return 'clicked'; } return 'not_found'; })();`);
       return { status: result === 'clicked' ? 'sent' : 'failed' };
     } catch (error) {
-      console.error(`Error sending message from window ${senderWindowId}:`, error.message);
+      log.error(`Error sending message from window ${senderWindowId}:`, error);
       throw error;
     } finally {
       if (senderWinInfo) senderWinInfo.isSending = false;
@@ -278,8 +245,9 @@ ipcMain.handle('send-group-message', async (_, { senderWindowId, groupName, mess
         senderWinInfo.isSending = true;
         const senderWin = senderWinInfo.window;
         if (senderWin.isDestroyed()) throw new Error('Sender window has been destroyed');
+        const selectorsJSON = JSON.stringify(selectors);
         clipboard.writeText(groupName);
-        const groupElementBoundsJSON = await senderWin.webContents.executeJavaScript(`new Promise(async (resolve, reject) => { const delay = ms => new Promise(res => setTimeout(res, ms)); const searchBox = document.querySelector('div[contenteditable="true"][data-tab="3"]'); if (!searchBox) return reject(new Error('Search box not found')); searchBox.focus(); document.execCommand('paste'); await delay(1000); let findAttempt = 0; const findInterval = setInterval(() => { findAttempt++; const listItems = Array.from(document.querySelectorAll('#pane-side div[role="listitem"]')); let foundItem = null; for (const item of listItems) { const titleSpan = item.querySelector('span[title]'); if (titleSpan && titleSpan.getAttribute('title').trim().toLowerCase() === '${groupName.replace(/'/g, "\\'").trim().toLowerCase()}') { foundItem = item; break; } } if (foundItem) { clearInterval(findInterval); const bounds = foundItem.getBoundingClientRect(); resolve(JSON.stringify(bounds)); } else if (findAttempt > 20) { clearInterval(findInterval); reject(new Error('Group "${groupName}" found, but failed to get its coordinates.')); } }, 500); });`);
+        const groupElementBoundsJSON = await senderWin.webContents.executeJavaScript(`new Promise(async (resolve, reject) => { const selectors = ${selectorsJSON}; const delay = ms => new Promise(res => setTimeout(res, ms)); const searchBox = document.querySelector(selectors.searchBox); if (!searchBox) return reject(new Error('Search box not found')); searchBox.focus(); document.execCommand('paste'); await delay(1500); let findAttempt = 0; const findInterval = setInterval(() => { findAttempt++; const listItems = Array.from(document.querySelectorAll(selectors.chatList + ' ' + selectors.chatListItem)); let foundItem = null; for (const item of listItems) { const titleSpan = item.querySelector(selectors.chatListItemTitle); if (titleSpan && titleSpan.getAttribute('title').trim().toLowerCase() === '${groupName.replace(/'/g, "\\'").trim().toLowerCase()}') { foundItem = item; break; } } if (foundItem) { clearInterval(findInterval); resolve(JSON.stringify(foundItem.getBoundingClientRect())); } else if (findAttempt > 20) { clearInterval(findInterval); reject(new Error('Group "${groupName}" tidak ditemukan.')); } }, 500); });`);
         if (groupElementBoundsJSON) {
             const bounds = JSON.parse(groupElementBoundsJSON);
             const x = Math.round(bounds.left + bounds.width / 2);
@@ -292,14 +260,27 @@ ipcMain.handle('send-group-message', async (_, { senderWindowId, groupName, mess
             throw new Error('Could not get group element coordinates.');
         }
         await new Promise(resolve => setTimeout(resolve, 1500));
-        clipboard.writeText(message);
-        const result = await senderWin.webContents.executeJavaScript(`new Promise((resolve, reject) => { let attempt = 0; const messageBoxInterval = setInterval(() => { attempt++; const messageBox = document.querySelector('div[contenteditable="true"][data-tab="10"]'); if (messageBox) { clearInterval(messageBoxInterval); messageBox.focus(); document.execCommand('paste'); setTimeout(() => { const sendBtn = document.querySelector('button[aria-label="Send"]') || document.querySelector('span[data-icon="send"]'); if (!sendBtn) return reject(new Error('Send button not found.')); sendBtn.click(); resolve('sent'); }, 500); } else if (attempt > 40) { clearInterval(messageBoxInterval); reject(new Error('Message box not found.')); } }, 500); });`);
-        return { status: result };
+        await senderWin.webContents.executeJavaScript(`new Promise((resolve, reject) => { const selectors = ${selectorsJSON}; let attempt = 0; const interval = setInterval(() => { attempt++; const messageBox = document.querySelector(selectors.messageBox); if (messageBox) { clearInterval(interval); messageBox.focus(); resolve(true); } if (attempt > 20) { clearInterval(interval); reject(new Error('Message box not found.')); } }, 500); });`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await senderWin.webContents.insertText(message);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const sendButtonBoundsJSON = await senderWin.webContents.executeJavaScript(`new Promise((resolve, reject) => { const selectors = ${selectorsJSON}; const sendBtn = document.querySelector(selectors.sendButton); if (sendBtn) { resolve(JSON.stringify(sendBtn.getBoundingClientRect())); } else { reject(new Error('Send button not found after typing.')); } });`);
+        if (sendButtonBoundsJSON) {
+            const bounds = JSON.parse(sendButtonBoundsJSON);
+            const x = Math.round(bounds.left + bounds.width / 2);
+            const y = Math.round(bounds.top + bounds.height / 2);
+            await senderWin.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await senderWin.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+        } else {
+            throw new Error('Could not get Send button coordinates.');
+        }
+        return { status: 'sent' };
     } catch (error) {
-        console.error(`Error sending group message from window ${senderWindowId}:`, error.message);
+        log.error(`Error sending group message from window ${senderWindowId}:`, error);
         throw error;
     } finally {
-        if (senderWinInfo) { senderWinInfo.isSending = false; clipboard.clear(); }
+        if (senderWinInfo) { senderWinInfo.isSending = false; }
     }
 });
 
@@ -311,12 +292,13 @@ ipcMain.handle('find-and-reply-story', async (_, accountId) => {
         winInfo.isSending = true;
         const win = winInfo.window;
         win.focus();
-        await win.webContents.executeJavaScript(`new Promise((resolve, reject) => { let attempt = 0; const findStatusTabInterval = setInterval(() => { attempt++; const statusTab = document.querySelector('button[aria-label*="Status"]'); if (statusTab) { clearInterval(findStatusTabInterval); statusTab.click(); resolve(true); } if (attempt > 60) { clearInterval(findStatusTabInterval); reject(new Error('Tombol Status tidak ditemukan setelah 30 detik.')); } }, 500); });`);
+        const selectorsJSON = JSON.stringify(selectors);
+        await win.webContents.executeJavaScript(`new Promise((resolve, reject) => { const selectors = ${selectorsJSON}; let attempt = 0; const findStatusTabInterval = setInterval(() => { attempt++; const statusTab = document.querySelector(selectors.statusTab); if (statusTab) { clearInterval(findStatusTabInterval); statusTab.click(); resolve(true); } if (attempt > 60) { clearInterval(findStatusTabInterval); reject(new Error('Status tab not found.')); } }, 500); });`);
         await new Promise(resolve => setTimeout(resolve, 2000));
-        const storyElementBoundsJSON = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => { let storyToClick = null; const statusItems = Array.from(document.querySelectorAll('div[class*="statusList"] div[role="listitem"]')); for (const item of statusItems) { const unreadIndicator = item.querySelector('svg[class*="x165d6jo"]'); if (unreadIndicator) { storyToClick = item.querySelector('div[role="button"]'); break; } } if (storyToClick) { const bounds = storyToClick.getBoundingClientRect(); resolve(JSON.stringify({ bounds: bounds, owner: storyToClick.querySelector('span[title]')?.getAttribute('title') || 'a friend' })); } else { resolve(JSON.stringify({ bounds: null, owner: null })); } });`);
+        const storyElementBoundsJSON = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => { const selectors = ${selectorsJSON}; let storyToClick = null; const statusItems = Array.from(document.querySelectorAll(selectors.statusListContainer + ' ' + selectors.chatListItem)); for (const item of statusItems) { const unreadIndicator = item.querySelector(selectors.unreadStatusIndicator); if (unreadIndicator) { storyToClick = item.querySelector('div[role="button"]'); break; } } if (storyToClick) { const bounds = storyToClick.getBoundingClientRect(); resolve(JSON.stringify({ bounds, owner: storyToClick.querySelector(selectors.chatListItemTitle)?.getAttribute('title') || 'a friend' })); } else { resolve(JSON.stringify({ bounds: null, owner: null })); } });`);
         const storyData = JSON.parse(storyElementBoundsJSON);
         if (!storyData.bounds) {
-            await win.webContents.executeJavaScript(`document.querySelector('button[aria-label*="Chat"]')?.click()`);
+            await win.webContents.executeJavaScript(`document.querySelector('${selectors.chatTab}')?.click()`);
             return { success: false, reason: 'No unread stories found' };
         }
         const { bounds, owner } = storyData;
@@ -329,12 +311,12 @@ ipcMain.handle('find-and-reply-story', async (_, accountId) => {
         const genericReplies = ["👍", "🔥", "Keren!", "Mantap 👍", "Wih asik!"];
         const replyMessage = genericReplies[Math.floor(Math.random() * genericReplies.length)];
         clipboard.writeText(replyMessage);
-        const replyResult = await win.webContents.executeJavaScript(`new Promise(async (resolve, reject) => { let attempt = 0; const findReplyUIInterval = setInterval(() => { attempt++; const replyBox = document.querySelector('div[role="textbox"][aria-placeholder="Type a reply…"]'); const sendButtonContainer = document.querySelector('button span[data-icon="send"]'); const sendButton = sendButtonContainer ? sendButtonContainer.closest('button') : null; if (replyBox && sendButton) { clearInterval(findReplyUIInterval); replyBox.focus(); document.execCommand('paste'); setTimeout(() => { sendButton.click(); resolve(true); }, 500); } if (attempt > 40) { clearInterval(findReplyUIInterval); reject(new Error('Reply UI (box or send button) not found in story viewer.')); } }, 500); });`);
+        const replyResult = await win.webContents.executeJavaScript(`new Promise(async (resolve, reject) => { const selectors = ${selectorsJSON}; let attempt = 0; const findReplyUIInterval = setInterval(() => { attempt++; const replyBox = document.querySelector(selectors.storyReplyBox); const sendButtonContainer = document.querySelector(selectors.storySendReplyButtonIcon); const sendButton = sendButtonContainer ? sendButtonContainer.closest('button') : null; if (replyBox && sendButton) { clearInterval(findReplyUIInterval); replyBox.focus(); document.execCommand('paste'); setTimeout(() => { sendButton.click(); resolve(true); }, 500); } if (attempt > 40) { clearInterval(findReplyUIInterval); reject(new Error('Reply UI not found in story viewer.')); } }, 500); });`);
         await new Promise(resolve => setTimeout(resolve, 2000));
-        await win.webContents.executeJavaScript(`const closeButton = document.querySelector('div[role="button"][aria-label="Close"]'); if (closeButton) closeButton.click(); setTimeout(() => { const chatTab = document.querySelector('button[aria-label*="Chat"]'); if(chatTab) chatTab.click(); }, 1000);`);
+        await win.webContents.executeJavaScript(`const selectors = ${selectorsJSON}; const closeButton = document.querySelector(selectors.storyCloseButton); if (closeButton) closeButton.click(); setTimeout(() => { const chatTab = document.querySelector(selectors.chatTab); if(chatTab) chatTab.click(); }, 1000);`);
         return { success: replyResult, repliedTo: owner };
     } catch (error) {
-        console.error(`Error replying to story from window ${accountId}:`, error.message);
+        log.error(`Error replying to story from window ${accountId}:`, error);
         throw error;
     } finally {
         if (winInfo) { winInfo.isSending = false; clipboard.clear(); }
@@ -349,14 +331,38 @@ ipcMain.handle('post-text-story', async (_, { accountId, storyText }) => {
         winInfo.isSending = true;
         const win = winInfo.window;
         win.focus();
-        clipboard.writeText(storyText);
-        const result = await win.webContents.executeJavaScript(`new Promise(async (resolve, reject) => { const delay = ms => new Promise(res => setTimeout(res, ms)); try { const statusTab = document.querySelector('button[aria-label*="Status"]'); if (!statusTab) throw new Error('Status tab not found'); statusTab.click(); await delay(1500); const addStatusBtn = document.querySelector('button[aria-label="Add Status"]'); if (!addStatusBtn) throw new Error('Add Status (+) button not found'); addStatusBtn.click(); await delay(1500); const pencilIcon = document.querySelector('span[data-icon="pencil-refreshed"]'); const createTextStatusBtn = pencilIcon ? pencilIcon.closest('li[role="button"]') : null; if (!createTextStatusBtn) throw new Error('Create text status button (pencil icon) not found'); createTextStatusBtn.click(); await delay(2000); const textEditor = document.querySelector('div[contenteditable="true"][aria-placeholder="Type a status"]'); if (!textEditor) throw new Error('Status text editor not found'); textEditor.focus(); document.execCommand('paste'); await delay(500); const sendButton = document.querySelector('div[role="button"][aria-label="Send"]'); if (!sendButton) throw new Error('Send status button not found'); sendButton.click(); await delay(2000); await delay(1000); const chatTab = document.querySelector('button[aria-label*="Chat"]'); if(chatTab) chatTab.click(); resolve({ success: true }); } catch (err) { try { const chatTab = document.querySelector('button[aria-label*="Chat"]'); if(chatTab) chatTab.click(); } finally { reject(err); } } });`);
-        return result;
+        const selectorsJSON = JSON.stringify(selectors);
+        await win.webContents.executeJavaScript(`new Promise(async (resolve, reject) => { const selectors = ${selectorsJSON}; const delay = ms => new Promise(res => setTimeout(res, ms)); try { const statusTab = document.querySelector(selectors.statusTab); if (!statusTab) throw new Error('Status tab not found'); statusTab.click(); await delay(1500); const addStatusBtn = document.querySelector(selectors.addStatusButton); if (!addStatusBtn) throw new Error('Add Status (+) button not found'); addStatusBtn.click(); await delay(1500); const pencilIcon = document.querySelector(selectors.createTextStatusButton); const createTextStatusBtn = pencilIcon ? pencilIcon.closest('li[role="button"]') : null; if (!createTextStatusBtn) throw new Error('Create text status button (pencil icon) not found'); createTextStatusBtn.click(); await delay(2000); resolve(true); } catch (err) { reject(err); } });`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await win.webContents.insertText(storyText);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const sendButtonBoundsJSON = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => { const selectors = ${selectorsJSON}; const sendButton = document.querySelector(selectors.sendStatusButton); if (!sendButton) return reject(new Error('Send status button not found')); resolve(JSON.stringify(sendButton.getBoundingClientRect())); });`);
+        if (sendButtonBoundsJSON) {
+            const bounds = JSON.parse(sendButtonBoundsJSON);
+            const x = Math.round(bounds.left + bounds.width / 2);
+            const y = Math.round(bounds.top + bounds.height / 2);
+            await win.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await win.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
+        } else {
+            throw new Error('Could not get Send button coordinates.');
+        }
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await win.webContents.executeJavaScript(`document.querySelector('${selectors.chatTab}')?.click()`);
+        return { success: true };
     } catch (error) {
-        console.error(`Error posting story from window ${accountId}:`, error.message);
+        log.error(`Error posting story from window ${accountId}:`, error);
+        try {
+            const win = state.whatsappWindows.get(Number(accountId))?.window;
+            if (win && !win.isDestroyed()) {
+                await win.webContents.executeJavaScript(`document.querySelector('${selectors.chatTab}')?.click()`);
+            }
+        } catch (cleanupError) {
+            log.error('Failed to return to chat tab after error:', cleanupError);
+        }
         throw error;
     } finally {
-        if (winInfo) { winInfo.isSending = false; clipboard.clear(); }
+        if (winInfo) { winInfo.isSending = false; }
     }
 });
 
@@ -371,7 +377,7 @@ ipcMain.handle('clear-all-data', async () => {
     app.quit();
     return { status: 'success' };
   } catch (error) {
-    console.error('Failed to clear user data:', error);
+    log.error('Failed to clear user data:', error);
     return { status: 'error', message: error.message };
   }
 });
