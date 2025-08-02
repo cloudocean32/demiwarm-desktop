@@ -167,7 +167,6 @@ function updateAllAccountStatuses() {
 async function isConversationStuck(history) {
     if (history.length < 4) return false;
     const recentChat = history.slice(-4).map(item => `- ${item.sender}: "${item.message}"`).join('\n');
-    // PERUBAHAN: Menambahkan aturan bahasa
     const prompt = `Analisa percakapan berikut:\n${recentChat}\n\nPertanyaan: Apakah inti percakapan ini hanya berputar-putar pada topik yang sama tanpa kemajuan? Jawab HANYA dengan "YA" atau "TIDAK".\n\nATURAN MUTLAK: Jawaban Anda HARUS dalam Bahasa Indonesia.`;
     try {
         const response = await window.electronAPI.askAI(prompt);
@@ -180,7 +179,6 @@ async function isConversationStuck(history) {
 
 async function generateRelatedSubtopic(parentTopic, recentMessages, senderName) {
   const lastTopics = recentMessages.slice(-3).map(m => m.message).join('\n');
-  // PERUBAHAN: Menambahkan aturan bahasa
   const prompt = `Anda adalah ${senderName}. Topik utama adalah "${parentTopic}".\nPercakapan terakhir terasa buntu:\n${lastTopics}\n\nBuat satu kalimat pertanyaan atau pernyataan untuk memulai subtopik BARU yang masih relevan dengan "${parentTopic}" untuk memecah kebuntuan. Langsung tulis kalimatnya.\n\nATURAN MUTLAK: Jawaban Anda HARUS SELALU dalam Bahasa Indonesia.`;
   try {
     return await window.electronAPI.askAI(prompt);
@@ -199,8 +197,6 @@ function generateDynamicPrompt(lastMessage, senderName, receiverName, history, t
   } else {
     instruction = `Anda adalah ${senderName}, seorang ${job}. Balas pesan terakhir dari ${receiverName} ini: "${lastMessage}"`;
   }
-  
-  // PERUBAHAN: Menambahkan aturan bahasa yang lebih tegas
   const finalRules = [
       "TULIS JAWABAN LANGSUNG (hanya isi pesannya), TANPA awalan nama.", 
       "Fokus HANYA membalas satu pesan terakhir.", 
@@ -208,7 +204,6 @@ function generateDynamicPrompt(lastMessage, senderName, receiverName, history, t
       ...rules,
       "ATURAN MUTLAK: Balasan Anda HARUS SELALU dalam Bahasa Indonesia. Jangan pernah menggunakan bahasa lain selain Indonesia, bahkan jika riwayat chat berisi bahasa lain. Ini adalah aturan terpenting."
   ];
-  
   return [instruction, "\n---", "Riwayat singkat sebagai konteks (jangan diulang dalam jawaban):", historyContext || "(Belum ada riwayat)", "\n---", "Aturan WAJIB:", ...finalRules].join('\n');
 }
 
@@ -305,7 +300,6 @@ async function runSingleTurnForPair(pair, room) {
             const senderStatus = getAccountStatus(sender);
             if (senderStatus !== 'Sleeping') {
                 updateAccountUI(senderId, { actionStatus: 'Waking up...' });
-                // PERUBAHAN: Menambahkan aturan bahasa
                 const wakeUpPrompt = `Anda adalah ${sender.name}. Balas pesan dari ${receiver.name} yang sepertinya dikirim saat Anda tidur. Pesannya: "${lastHistoryEntry.message}". Minta maaf karena baru balas karena ketiduran, lalu tanggapi pesannya. ATURAN MUTLAK: Balasan Anda HARUS SELALU dalam Bahasa Indonesia.`;
                 let aiText = await window.electronAPI.askAI(wakeUpPrompt);
                 aiText = formatMessage(aiText);
@@ -458,7 +452,6 @@ async function runGroupTurn(room, shuffledMembers) {
         const chosenStyle = groupContributionStyles[Math.floor(Math.random() * groupContributionStyles.length)];
         const historyContext = (room.history || []).slice(-5).map(m => `${m.sender}: ${m.message}`).join('\n');
         
-        // PERUBAHAN: Menambahkan aturan bahasa yang lebih tegas
         const prompt = `Anda adalah ${sender.name} (seorang ${sender.job}) dengan kepribadian: "${sender.personalityName}". Anda sedang berada di dalam sebuah grup chat WhatsApp. Topik utama grup ini adalah "${room.topic}".\n\nRiwayat 5 pesan terakhir:\n${historyContext || "(Belum ada pesan, Anda yang mulai)"}\n\n---\nTUGAS ANDA:\nBerkontribusilah ke dalam percakapan secara alami. Untuk giliran Anda kali ini, gunakan gaya berikut: "${chosenStyle}"\n\nATURAN PALING PENTING:\n1.  JANGAN PERNAH menyertakan nama Anda di awal pesan (contoh SALAH: Irfan: Halo).\n2.  JANGAN PERNAH membungkus jawaban Anda dengan tanda kutip (contoh SALAH: "Halo semua").\n3.  JAWABAN ANDA HARUS BERSIH, HANYA BERISI TEKS PESANNYA SAJA.\n4. ATURAN MUTLAK: Balasan Anda HARUS SELALU dalam Bahasa Indonesia. Jangan pernah menggunakan bahasa lain selain Indonesia.\n\nContoh output BENAR:\nWah, menarik banget topiknya!`;
         
         let aiText = await window.electronAPI.askAI(prompt);
@@ -490,34 +483,16 @@ async function runGroupTurn(room, shuffledMembers) {
 async function runPostStoryTaskCycle(room, buttonEl) {
     updateStatus(`Menjalankan tugas Post Story untuk room: "${room.topic}"...`, 'processing');
     const shuffledMembers = [...room.members].sort(() => 0.5 - Math.random());
-
     for (const accountId of shuffledMembers) {
         if (!room.isAutomationRunning) break;
         const account = state.accounts[accountId];
         if (!account || getAccountStatus(account) === 'Sleeping') continue;
-
         try {
             updateAccountUI(accountId, { actionStatus: 'Creating a new story...' });
-
-            // ======================================================================
-            // PERBAIKAN FINAL: Menambahkan ID unik untuk memaksa hasil yang berbeda
-            // ======================================================================
-            const prompt = `Anda adalah seorang motivator berpengalaman.
-Tugas Anda adalah menulis satu kutipan motivasi singkat (satu atau dua kalimat) untuk status WhatsApp.
-
-Untuk status kali ini, buatlah kutipan yang mungkin akan ditulis oleh seorang ${account.job} dengan kepribadian "${account.personalityName}".
-
-PENTING: Hasilnya HARUS selalu unik dan berbeda dari permintaan sebelumnya. Gunakan variasi kata dan ide.
-ID Permintaan Unik (abaikan isinya, ini hanya untuk memastikan jawaban berbeda): ${Date.now()}
-
-Langsung tulis kutipannya saja, tanpa awalan atau akhiran seperti tanda kutip.
-ATURAN MUTLAK: Jawaban Anda HARUS SELALU dalam Bahasa Indonesia.`;
-            
+            const prompt = `Anda adalah seorang motivator berpengalaman.\nTugas Anda adalah menulis satu kutipan motivasi singkat (satu atau dua kalimat) untuk status WhatsApp.\n\nUntuk status kali ini, buatlah kutipan yang mungkin akan ditulis oleh seorang ${account.job} dengan kepribadian "${account.personalityName}".\n\nPENTING: Hasilnya HARUS selalu unik dan berbeda dari permintaan sebelumnya. Gunakan variasi kata dan ide.\nID Permintaan Unik (abaikan isinya, ini hanya untuk memastikan jawaban berbeda): ${Date.now()}\n\nLangsung tulis kutipannya saja, tanpa awalan atau akhiran seperti tanda kutip.\nATURAN MUTLAK: Jawaban Anda HARUS SELALU dalam Bahasa Indonesia.`;
             const storyText = await window.electronAPI.askAI(prompt);
-
             if (storyText && !storyText.includes("Oops")) {
                 const postResult = await window.electronAPI.postTextStory({ accountId, storyText });
-
                 if (postResult.success) {
                     console.log(`${account.name} memposting story: "${storyText}"`);
                     updateAccountUI(accountId, { actionStatus: '✔ Story Posted' });
@@ -531,11 +506,9 @@ ATURAN MUTLAK: Jawaban Anda HARUS SELALU dalam Bahasa Indonesia.`;
             updateStatus(`Error pada akun ${account.name}: ${err.message}`, 'error');
             updateAccountUI(accountId, { actionStatus: 'Error!' });
         }
-
         const delayBetweenAccounts = 5000 + Math.random() * 10000;
         await new Promise(resolve => setTimeout(resolve, delayBetweenAccounts));
     }
-
     updateStatus(`Tugas Post Story untuk room "${room.topic}" selesai.`, 'success');
     if (room.isAutomationRunning) {
         toggleAutomation(room.id, buttonEl);
@@ -571,6 +544,23 @@ async function runStoryTaskCycle(room, buttonEl) {
     if (room.isAutomationRunning) {
         toggleAutomation(room.id, buttonEl);
     }
+}
+
+function showStoryTaskModal(roomId, buttonEl) {
+    const modalTemplate = document.getElementById('storyTaskModalTemplate');
+    const modal = modalTemplate.content.cloneNode(true);
+    const modalElement = modal.firstElementChild;
+    document.body.appendChild(modalElement);
+    const closeModal = () => document.body.removeChild(modalElement);
+    modalElement.querySelector('#startPostStoryBtn').addEventListener('click', () => {
+        closeModal();
+        toggleAutomation(roomId, buttonEl, 'post_story');
+    });
+    modalElement.querySelector('#startViewReplyBtn').addEventListener('click', () => {
+        closeModal();
+        toggleAutomation(roomId, buttonEl, 'view_reply');
+    });
+    modalElement.querySelector('#cancelStoryTaskBtn').addEventListener('click', closeModal);
 }
 
 async function toggleAutomation(roomId, buttonEl, storyTask = null) {
@@ -649,6 +639,7 @@ function setRoomControlsState(roomId, isDisabled) {
     const roomContainer = document.querySelector(`.room-container[data-room-id="${roomId}"]`);
     if (!roomContainer) return;
     roomContainer.querySelector('.add-account-btn').disabled = isDisabled;
+    roomContainer.querySelector('.edit-room-btn').disabled = isDisabled;
     roomContainer.querySelector('.delete-room-btn').disabled = isDisabled;
     const room = state.topicRooms[roomId];
     if (room) {
@@ -683,18 +674,16 @@ function createRoom(topic, roomId, roomSettings) {
       groupNameText.textContent = roomSettings.groupName;
   }
   
-  roomContainer.querySelector('.room-style-text').textContent = `Style: ${roomSettings.chatStyle}`;
-  roomContainer.querySelector('.room-delay-text').textContent = `Delay: ${roomSettings.delayMin/1000}-${roomSettings.delayMax/1000}s`;
-
-  // --- TAMBAHKAN EVENT LISTENER UNTUK TOMBOL EDIT ---
-  const editBtn = roomContainer.querySelector('.edit-room-btn');
-  editBtn.addEventListener('click', () => showEditRoomModal(roomId));
-  // --- AKHIR PENAMBAHAN ---
+  roomContainer.querySelector('.room-style-text').textContent = `Style ${roomSettings.chatStyle}`;
+  roomContainer.querySelector('.room-delay-text').textContent = `Delay ${roomSettings.delayMin/1000}-${roomSettings.delayMax/1000}s`;
 
   const addAccountBtn = roomContainer.querySelector('.add-account-btn');
   const accountsWrapper = roomContainer.querySelector('.room-accounts');
   addAccountBtn.addEventListener('click', () => showAccountModal(roomId, accountsWrapper));
   
+  const editBtn = roomContainer.querySelector('.edit-room-btn');
+  editBtn.addEventListener('click', () => showEditRoomModal(roomId));
+
   const automationBtn = roomContainer.querySelector('.automation-btn');
   if (roomSettings.roomType === 'Story') {
     automationBtn.innerHTML = '▶ Start Story';
@@ -715,34 +704,24 @@ function createRoom(topic, roomId, roomSettings) {
   windowsContainer.appendChild(roomContainer);
 }
 
-// renderer.js
-
 function showEditRoomModal(roomId) {
     const roomSettings = state.topicRooms[roomId];
     if (!roomSettings) return;
-
     const modal = roomModalTemplate.content.cloneNode(true);
     const modalElement = modal.firstElementChild;
     document.body.appendChild(modalElement);
-
     modalElement.querySelector('h3').textContent = 'Edit Room';
     const confirmBtn = modalElement.querySelector('#confirmRoomBtn');
     confirmBtn.textContent = 'Update';
-
-    // Ambil semua elemen penting dari modal
     const roomTypeRadios = modalElement.querySelectorAll('input[name="roomType"]');
     const topicInput = modalElement.querySelector('#roomTopicInput');
     const topicLabel = modalElement.querySelector('label[for="roomTopicInput"]');
     const groupNameContainer = modalElement.querySelector('#groupNameContainer');
     const chatOptionsContainer = modalElement.querySelector('#chatOptionsContainer');
     
-    // ======================================================================
-    // PERBAIKAN: Event listener yang lebih cerdas untuk menangani semua kasus
-    // ======================================================================
     roomTypeRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
             const selectedType = e.target.value;
-            
             if (selectedType === 'Story') {
                 topicLabel.textContent = 'Task / Story Theme:';
                 groupNameContainer.style.display = 'none';
@@ -752,15 +731,13 @@ function showEditRoomModal(roomId) {
                 chatOptionsContainer.style.display = 'block';
                 if (selectedType === 'group') {
                     groupNameContainer.style.display = 'block';
-                } else { // 1on1
+                } else {
                     groupNameContainer.style.display = 'none';
                 }
             }
         });
     });
-    // ======================================================================
-
-    // Isi form dengan data yang sudah ada dan picu event change
+    
     roomTypeRadios.forEach(radio => {
         radio.checked = radio.value === roomSettings.roomType;
         if (radio.checked) {
@@ -778,13 +755,11 @@ function showEditRoomModal(roomId) {
     
     const closeModal = () => document.body.removeChild(modalElement);
     modalElement.querySelector('#cancelRoomBtn').addEventListener('click', closeModal);
-
     confirmBtn.addEventListener('click', () => {
         const newRoomType = modalElement.querySelector('input[name="roomType"]:checked').value;
         let newTopic, newGroupName = null, newChatStyle, newDelayMin, newDelayMax;
-        
         if (newRoomType === 'Story') {
-            newTopic = 'Story Task'; // Topik untuk Story Room bersifat tetap
+            newTopic = 'Story Task';
             newChatStyle = 'casual';
             newDelayMin = 5000;
             newDelayMax = 10000;
@@ -799,7 +774,6 @@ function showEditRoomModal(roomId) {
             newDelayMin = parseInt(modalElement.querySelector('#delayMinInput').value, 10);
             newDelayMax = parseInt(modalElement.querySelector('#delayMaxInput').value, 10);
         }
-        
         state.topicRooms[roomId] = {
             ...state.topicRooms[roomId],
             roomType: newRoomType,
@@ -809,7 +783,6 @@ function showEditRoomModal(roomId) {
             delayMin: newDelayMin,
             delayMax: newDelayMax,
         };
-        
         updateRoomCardUI(roomId);
         updateStatus(`Room "${newTopic}" updated.`, 'success');
         closeModal();
@@ -1055,7 +1028,7 @@ async function initialize() {
     window.electronAPI.onUpdateAvailable(() => {
         console.log('Update available from main process, showing button.');
         const updateBtn = document.getElementById('updateNotification');
-        updateBtn.style.display = 'flex'; // Tampilkan tombol
+        updateBtn.style.display = 'flex';
         
         updateBtn.addEventListener('click', () => {
             updateBtn.textContent = 'Downloading...';
